@@ -1,0 +1,20 @@
+--- a/src/linuwu_sense.c
++++ b/src/linuwu_sense.c
+@@ -2922,10 +2922,16 @@ static void acer_wmi_notify(u32 value, void *context)
+     case WMID_GAMING_TURBO_KEY_EVENT:
+         pr_info("pressed turbo button - %d\n", return_value.key_num);
+         if (return_value.key_num == 0x4 && !has_cap(ACER_CAP_NITRO_SENSE_V4))
++        {
+             acer_toggle_turbo();
++            input_report_key(acer_wmi_input_dev, KEY_PROG1, 1);
++            input_report_key(acer_wmi_input_dev, KEY_PROG1, 0);
++            input_sync(acer_wmi_input_dev);
++        }
+         if ((return_value.key_num == 0x5 || (return_value.key_num == 0x4 && has_cap(ACER_CAP_NITRO_SENSE_V4))) && has_cap(ACER_CAP_PLATFORM_PROFILE))
++        {
+             acer_thermal_profile_change();
++            input_report_key(acer_wmi_input_dev, KEY_PROG1, 1);
++            input_report_key(acer_wmi_input_dev, KEY_PROG1, 0);
++            input_sync(acer_wmi_input_dev);
++        }
+         break;
