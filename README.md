@@ -3,6 +3,7 @@
 <div align="center">
 
 **A full PredatorSense replacement GUI for the Acer Predator PHN16S-71 on Linux**
+**Works on GNOME and KDE Plasma**
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 [![Platform](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://kernel.org)
@@ -114,6 +115,8 @@ predatorsense
 Or search **"PredatorSense"** in your GNOME app grid.
 
 > **No internet required after cloning.** The `linuwu_sense` kernel driver is bundled locally in the `driver/` folder — the installer uses it directly without downloading anything extra.
+
+> **Works on GNOME and KDE Plasma.** libadwaita is optional — the installer detects your desktop and configures accordingly. No extra setup needed.
 
 ---
 
