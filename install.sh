@@ -151,22 +151,47 @@ detect_kernel_headers() {
 }
 
 detect_compiler() {
-  # CachyOS kernels are typically compiled with Clang
-  if clang --version &>/dev/null; then
+  KERNEL_CONFIG="/boot/config-$(uname -r)"
+
+  # Determine what compiler the *running* kernel was built with.
+  # Using the wrong compiler for DKMS modules causes build failures on CachyOS.
+  if [[ -f "$KERNEL_CONFIG" ]] && grep -q "CONFIG_CC_IS_CLANG=y" "$KERNEL_CONFIG"; then
+    KERNEL_COMPILER="clang"
+  elif [[ -f "$KERNEL_CONFIG" ]] && grep -q "CONFIG_CC_IS_GCC=y" "$KERNEL_CONFIG"; then
+    KERNEL_COMPILER="gcc"
+  else
+    KERNEL_COMPILER=""
+    warn "Cannot determine kernel compiler from $KERNEL_CONFIG — will auto-detect"
+  fi
+
+  if [[ "$KERNEL_COMPILER" == "clang" ]] && clang --version &>/dev/null; then
     COMPILER="clang"
     LLVM_FLAG="LLVM=1"
-    log "Compiler: Clang/LLVM (optimal for CachyOS)"
+    log "Compiler: Clang/LLVM (matches kernel build)"
+  elif [[ "$KERNEL_COMPILER" == "gcc" ]]; then
+    COMPILER="gcc"
+    LLVM_FLAG=""
+    log "Compiler: GCC (matches kernel build)"
+  elif [[ "$KERNEL_COMPILER" == "clang" ]] && ! clang --version &>/dev/null; then
+    COMPILER="gcc"
+    LLVM_FLAG=""
+    warn "Kernel was built with Clang but clang is not installed — using GCC (may fail)"
+    warn "Install clang: sudo pacman -S clang llvm lld"
+  elif clang --version &>/dev/null; then
+    COMPILER="clang"
+    LLVM_FLAG="LLVM=1"
+    log "Compiler: Clang/LLVM"
   else
     COMPILER="gcc"
     LLVM_FLAG=""
-    warn "Clang not found, falling back to GCC"
+    log "Compiler: GCC"
   fi
 }
 
 install_base_deps() {
   step "Installing base dependencies"
   if [[ "${PKG_MANAGER:-pacman}" == "pacman" ]]; then
-    sudo pacman -Sy --needed --noconfirm       git base-devel dkms       python python-gobject python-pip       gtk4 libadwaita       lm_sensors       "$HEADERS_PKG" || {
+    sudo pacman -S --needed --noconfirm       git base-devel dkms       python python-gobject python-pip       gtk4 libadwaita       lm_sensors       "$HEADERS_PKG" || {
       err "pacman install failed. Check your internet or mirrors."
       exit 1
     }
@@ -441,8 +466,7 @@ EOF
   log "udev rules installed"
 }
 
-setup_sudo_rules
-setup_input_group() {
+setup_sudo_rules() {
   step "Setting up passwordless sudo for specific hardware controls"
   CURRENT_USER=$(whoami)
   # Use printf + tee to avoid heredoc issues in fish shell and colon-in-path syntax errors
@@ -531,4 +555,5 @@ install_sensors
 install_app
 setup_udev
 setup_sudo_rules
+setup_input_group
 post_install_summary
